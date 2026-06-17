@@ -42,11 +42,11 @@ function scoreTrend(latest: number, previous: number | null) {
 
   const change = (latest - previous) / previous;
 
-  if (change >= 0.25) return 25;
-  if (change >= 0.1) return 22;
-  if (change >= 0) return 19;
-  if (change >= -0.1) return 14;
-  if (change >= -0.25) return 9;
+  if (change >= 0.50) return 25;
+  if (change >= 0.30) return 22;
+  if (change >= 0.15) return 18;
+  if (change >= 0.05) return 14;
+  if (change >= 0) return 10;
   return 4;
 }
 
@@ -286,12 +286,46 @@ export function calculateBusinessHealthScore(bundle: DatasetBundle) {
     bundle.salesMapping
   );
   const forecastScore = calculateForecastReadinessScore(bundle);
-  const score =
-    revenueScore +
-    inventoryScore +
-    customerScore +
-    forecastScore;
+let score =
+  revenueScore +
+  inventoryScore +
+  customerScore +
+  forecastScore;
 
+const lowStockItems = bundle.inventoryRows.filter((row) => {
+  const stock = getFieldNumber(
+    row,
+    bundle.inventoryMapping,
+    "inventory"
+  );
+
+  return stock !== null && stock <= 10;
+}).length;
+
+const uniqueCustomers = new Set(
+  [
+    ...bundle.customerRows.map((row) =>
+      getFieldValue(row, bundle.customerMapping, "customer")
+    ),
+    ...bundle.salesRows.map((row) =>
+      getFieldValue(row, bundle.salesMapping, "customer")
+    ),
+  ]
+    .filter(Boolean)
+    .map(String)
+).size;
+
+// Risk penalties
+
+if (lowStockItems > 100) score -= 10;
+else if (lowStockItems > 50) score -= 5;
+
+if (lowStockItems > 500) score -= 15;
+
+if (uniqueCustomers < 100) score -= 10;
+else if (uniqueCustomers < 250) score -= 5;
+
+score = clamp(score, 0, 100);
   return {
     score,
     revenueScore,

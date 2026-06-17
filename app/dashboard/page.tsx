@@ -129,17 +129,16 @@ export default function DashboardPage() {
         ).size
       : null;
 
-  const totalProducts =
-    inventoryRows.length > 0 && inventoryMapping.inventory
-      ? inventoryRows.length
-      : hasProduct
-      ? new Set(
-          salesRows
-            .map((row) => getMappedValue(row, salesMapping, "product"))
-            .filter(Boolean)
-            .map(String)
-        ).size
-      : null;
+  const totalProducts = hasProduct
+  ? new Set(
+      salesRows
+        .map((row) =>
+          getMappedValue(row, salesMapping, "product")
+        )
+        .filter(Boolean)
+        .map(String)
+    ).size
+  : null;
 
   const revenueByMonth: Record<string, number> = {};
 
@@ -203,6 +202,9 @@ export default function DashboardPage() {
           customers: totalCustomers,
           products: totalProducts,
           topProducts,
+          forecasts,
+          anomalies,
+          healthScore,
         }),
       });
 

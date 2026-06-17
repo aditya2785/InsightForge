@@ -186,7 +186,7 @@ function detectInventoryRisks(
   let overstockCount = 0;
 
   for (const stock of stockValues) {
-    if (stock <= Math.max(1, averageStock * 0.2)) {
+    if (stock <= Math.max(10, averageStock * 0.15)) {
       lowStockCount += 1;
     }
 

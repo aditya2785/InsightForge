@@ -24,10 +24,10 @@ const breakdownItems = [
 ] as const;
 
 function getScoreLabel(score: number) {
-  if (score >= 80) return "Strong";
-  if (score >= 60) return "Stable";
-  if (score >= 40) return "Watch";
-  return "Needs Attention";
+  if (score >= 85) return "Excellent";
+  if (score >= 70) return "Strong";
+  if (score >= 50) return "Needs Attention";
+  return "High Risk";
 }
 
 function getTrendText(healthScore: BusinessHealthScoreDTO) {

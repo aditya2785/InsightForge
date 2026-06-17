@@ -66,21 +66,21 @@ export async function GET() {
       Boolean(customers) ||
       Boolean(inventory);
 
-    if (!healthScore && hasAnyDataset) {
-      await recalculateBusinessHealthScore(userId);
-      healthScore = await getLatestBusinessHealthScore(userId);
-    }
+    if (hasAnyDataset) {
+  await recalculateBusinessHealthScore(userId);
+  healthScore = await getLatestBusinessHealthScore(userId);
+}
 
     let forecasts = await getForecastsForUser(userId);
     let anomalies = await getAnomaliesForUser(userId);
 
-    if (hasAnyDataset && forecasts.length === 0) {
-      forecasts = await generateForecastsForUser(userId);
-    }
+if (hasAnyDataset) {
+  forecasts = await generateForecastsForUser(userId);
+}
 
-    if (hasAnyDataset && anomalies.length === 0) {
-      anomalies = await analyzeAnomaliesForUser(userId);
-    }
+if (hasAnyDataset) {
+  anomalies = await analyzeAnomaliesForUser(userId);
+}
 
     const salesRecord = createDatasetRecord(sales);
     const customerRecord = createDatasetRecord(customers);

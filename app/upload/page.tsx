@@ -127,10 +127,17 @@ export default function UploadPage() {
         setCompatibility(detectedCompatibility);
         markDatasetUploaded(datasetType);
 
-        localStorage.setItem(
-          `${datasetType}_data`,
-          JSON.stringify(parsedData)
-        );
+try {
+  localStorage.setItem(
+    `${datasetType}_meta`,
+    JSON.stringify({
+      rowCount: parsedData.length,
+      uploadedAt: new Date().toISOString(),
+    })
+  );
+} catch (error) {
+  console.warn("Storage limit reached");
+}
 
         try {
           const response = await fetch("/api/upload", {

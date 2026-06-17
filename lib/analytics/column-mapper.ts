@@ -54,13 +54,16 @@ const aliasMap: Record<keyof ColumnMapping, string[]> = {
     "transaction_date",
     "purchase date",
   ],
-  quantity: [
-    "quantity",
-    "qty",
-    "units",
-    "units sold",
-    "count",
-  ],
+quantity: [
+  "quantity",
+  "quantity ordered",
+  "quantityordered",
+  "qty",
+  "units",
+  "units sold",
+  "count",
+  "order quantity",
+],
   inventory: [
     "inventory",
     "stock",
@@ -196,7 +199,36 @@ export function getMappedDate(
     return null;
   }
 
-  const date = new Date(String(value));
+  if (value instanceof Date) {
+    return value;
+  }
 
-  return Number.isNaN(date.getTime()) ? null : date;
+  const str = String(value).trim();
+
+  const isoDate = new Date(str);
+
+  if (!Number.isNaN(isoDate.getTime())) {
+    return isoDate;
+  }
+
+  const match = str.match(
+    /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/
+  );
+
+  if (match) {
+    let [, day, month, year] = match;
+
+    const fullYear =
+      year.length === 2
+        ? Number(`20${year}`)
+        : Number(year);
+
+    return new Date(
+      fullYear,
+      Number(month) - 1,
+      Number(day)
+    );
+  }
+
+  return null;
 }

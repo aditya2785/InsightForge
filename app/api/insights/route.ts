@@ -24,20 +24,33 @@ export async function POST(req: Request) {
       model: "gemini-2.5-flash",
     });
 
-    const prompt = `
-You are a senior business analyst. But do not mention it
+const prompt = `
+Analyze this business dataset and provide ONLY data-driven insights.
 
-Analyze the following business metrics and provide:
+Rules:
+- Use actual numbers from the data.
+- Mention forecast values when available.
+- Mention anomalies when available.
+- Mention the top-performing products.
+- Mention risks if inventory, customers, or revenue trends look weak.
+- Do not give generic advice.
+- Keep response under 250 words.
 
-1. Key Insights
-2. Risks
-3. Opportunities
-4. Actionable Recommendations
+Output Format:
 
-and keep it short like summary insights.
+📈 Key Insights
+- ...
+
+⚠️ Risks
+- ...
+
+🚀 Opportunities
+- ...
+
+✅ Recommended Actions
+- ...
 
 Business Data:
-
 ${JSON.stringify(body, null, 2)}
 `;
 

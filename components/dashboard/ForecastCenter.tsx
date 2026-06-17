@@ -34,12 +34,13 @@ function getLatestForecast(
 ) {
   return forecasts
     .filter((forecast) => forecast.forecastType === type)
-    .sort((a, b) => a.predictionDate.localeCompare(b.predictionDate))[0];
+    .sort((a, b) => b.predictionDate.localeCompare(a.predictionDate))[0];
 }
 
 export default function ForecastCenter({
   forecasts,
 }: ForecastCenterProps) {
+  console.log("FORECAST CENTER DATA", forecasts);
   const chartData = forecasts
     .filter((forecast) => forecast.forecastType === "SALES")
     .map((forecast) => ({

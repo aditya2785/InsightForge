@@ -7,39 +7,40 @@ const genAI = new GoogleGenerativeAI(
 );
 
 export async function POST() {
-  const userId = await getCurrentUserId();
+  try {
+    const userId = await getCurrentUserId();
 
-  if (!userId) {
-    return Response.json(
-      {
-        error: "Unauthorized",
-      },
-      { status: 401 }
-    );
-  }
+    if (!userId) {
+      return Response.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-  const uploads = await prisma.uploadedData.findMany({
-    where: {
-      userId,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: 10,
+    const uploads = await prisma.uploadedData.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
+
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+    });
+
+    if (uploads.length === 0) {
+  return Response.json({
+    report:
+      "No datasets have been uploaded yet. Please upload business data before generating a report.",
   });
+}
 
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash"
-  });
-
-  const prompt = `
+    const prompt = `
 Generate a professional business report.
 
-Use only the authenticated user's uploaded datasets below. If a dataset is
-missing, call that out as a data gap instead of inventing numbers.
+Use only the authenticated user's uploaded datasets below.
+If data is missing, mention it as a gap.
 
 Include:
-
 1. Executive Summary
 2. Revenue Analysis
 3. Customer Analysis
@@ -49,8 +50,6 @@ Include:
 7. Recommendations
 8. Forecast
 
-Use consulting style.
-
 Uploaded datasets:
 ${JSON.stringify(
   uploads.map((upload) => ({
@@ -59,18 +58,29 @@ ${JSON.stringify(
     columnMapping: upload.columnMapping,
     compatibilityScore: upload.compatibilityScore,
     compatibilityDetails: upload.compatibilityDetails,
-    rows: Array.isArray(upload.data) ? upload.data.slice(0, 50) : upload.data,
+    rows: Array.isArray(upload.data)
+      ? upload.data.slice(0, 10)
+      : upload.data,
   })),
   null,
   2
 )}
 `;
 
-  const result = await model.generateContent(prompt);
+    const result = await model.generateContent(prompt);
 
-  const report = result.response.text();
+    return Response.json({
+      report: result.response.text(),
+    });
 
-  return Response.json({
-    report
-  });
+  } catch (error) {
+    console.error("REPORT GENERATION ERROR:", error);
+
+    return Response.json(
+      {
+        error: "AI report generation temporarily unavailable. Please try again.",
+      },
+      { status: 500 }
+    );
+  }
 }

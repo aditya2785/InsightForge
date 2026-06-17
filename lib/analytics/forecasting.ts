@@ -92,7 +92,20 @@ function buildDemandForecasts(
   rows: BusinessRow[],
   mapping: ColumnMapping
 ) {
-  const periods = aggregateByPeriod(rows, mapping, "quantity", 1);
+  let periods = aggregateByPeriod(
+    rows,
+    mapping,
+    "quantity",
+    1
+  );
+
+  if (periods.length === 0) {
+    periods = aggregateByPeriod(
+      rows,
+      mapping,
+      "revenue"
+    );
+  }
 
   return buildTimeSeriesForecasts({
     userId,
@@ -123,12 +136,19 @@ function buildInventoryForecasts({
   inventoryRows: BusinessRow[];
   inventoryMapping: ColumnMapping;
 }) {
-  const demandPeriods = aggregateByPeriod(
+let demandPeriods = aggregateByPeriod(
+  salesRows,
+  salesMapping,
+  "quantity"
+);
+
+if (demandPeriods.length === 0) {
+  demandPeriods = aggregateByPeriod(
     salesRows,
     salesMapping,
-    "quantity",
-    1
+    "revenue"
   );
+}
 
   if (demandPeriods.length === 0 || !inventoryMapping.inventory) {
     return [];
@@ -146,22 +166,24 @@ function buildInventoryForecasts({
   const currentStock = getCurrentStock(inventoryRows, inventoryMapping);
   const lastDate = demandPeriods[demandPeriods.length - 1].date;
 
-  return nextPredictionDates(lastDate).map((predictionDate, index) => {
-    const safetyAdjustedDemand = demandPredictions[index] * 1.15;
-    const stockRequirement = Math.max(
-      0,
-      safetyAdjustedDemand - currentStock / (index + 1)
-    );
+return nextPredictionDates(lastDate).map((predictionDate, index) => {
+  const safetyAdjustedDemand =
+    demandPredictions[index] * 1.15;
 
-    return {
-      userId,
-      datasetId,
-      forecastType: "INVENTORY_REQUIREMENT" as const,
-      predictionDate,
-      predictedValue: Number(stockRequirement.toFixed(2)),
-      confidenceScore: Math.round(confidence),
-    };
-  });
+  const stockRequirement = Math.max(
+    0,
+    safetyAdjustedDemand - currentStock
+  );
+
+  return {
+    userId,
+    datasetId,
+    forecastType: "INVENTORY_REQUIREMENT" as const,
+    predictionDate,
+    predictedValue: Number(stockRequirement.toFixed(2)),
+    confidenceScore: Math.round(confidence),
+  };
+});
 }
 
 function toDTO(forecast: {
