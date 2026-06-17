@@ -31,7 +31,7 @@ export default function LoginPage() {
     const data = await res.json();
 
     if (res.ok) {
-      router.replace("/dashboard");
+      window.location.href = "/dashboard";
     } else {
       setErrorMessage(data.message ?? "Login failed");
     }

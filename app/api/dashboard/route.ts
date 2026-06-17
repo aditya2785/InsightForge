@@ -1,5 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth";
+import {
+  getLatestBusinessHealthScore,
+  recalculateBusinessHealthScore,
+} from "@/lib/analytics/business-health";
+import {
+  generateForecastsForUser,
+  getForecastsForUser,
+} from "@/lib/analytics/forecasting";
+import {
+  analyzeAnomaliesForUser,
+  getAnomaliesForUser,
+} from "@/lib/analytics/anomaly-detection";
+import { createDatasetRecord } from "@/lib/analytics/dataset-utils";
 
 export async function GET() {
   try {
@@ -45,11 +58,62 @@ export async function GET() {
       },
     });
 
+    let healthScore =
+      await getLatestBusinessHealthScore(userId);
+
+    const hasAnyDataset =
+      Boolean(sales) ||
+      Boolean(customers) ||
+      Boolean(inventory);
+
+    if (!healthScore && hasAnyDataset) {
+      await recalculateBusinessHealthScore(userId);
+      healthScore = await getLatestBusinessHealthScore(userId);
+    }
+
+    let forecasts = await getForecastsForUser(userId);
+    let anomalies = await getAnomaliesForUser(userId);
+
+    if (hasAnyDataset && forecasts.length === 0) {
+      forecasts = await generateForecastsForUser(userId);
+    }
+
+    if (hasAnyDataset && anomalies.length === 0) {
+      anomalies = await analyzeAnomaliesForUser(userId);
+    }
+
+    const salesRecord = createDatasetRecord(sales);
+    const customerRecord = createDatasetRecord(customers);
+    const inventoryRecord = createDatasetRecord(inventory);
+
     return Response.json({
       success: true,
-      salesRows: sales?.data ?? [],
-      customerRows: customers?.data ?? [],
-      inventoryRows: inventory?.data ?? [],
+      salesRows: salesRecord?.rows ?? [],
+      customerRows: customerRecord?.rows ?? [],
+      inventoryRows: inventoryRecord?.rows ?? [],
+      datasetMetadata: {
+        sales: salesRecord
+          ? {
+              mapping: salesRecord.mapping,
+              compatibility: salesRecord.compatibility,
+            }
+          : null,
+        customers: customerRecord
+          ? {
+              mapping: customerRecord.mapping,
+              compatibility: customerRecord.compatibility,
+            }
+          : null,
+        inventory: inventoryRecord
+          ? {
+              mapping: inventoryRecord.mapping,
+              compatibility: inventoryRecord.compatibility,
+            }
+          : null,
+      },
+      healthScore,
+      forecasts,
+      anomalies,
     });
   } catch (error) {
     console.error(error);

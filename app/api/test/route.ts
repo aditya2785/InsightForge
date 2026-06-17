@@ -1,30 +1,12 @@
-import { getCurrentUserId } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+// app/api/testbcrypt/route.ts
+
+import { NextResponse } from "next/server";
+import bcrypt from "bcrypt";
 
 export async function GET() {
-  try {
-    const userId = await getCurrentUserId();
+  const hash = await bcrypt.hash("hello", 10);
 
-    if (!userId) {
-      return Response.json(
-        {
-          success: false,
-          error: "Unauthorized",
-        },
-        { status: 401 }
-      );
-    }
-
-    await prisma.$queryRaw`SELECT NOW()`;
-
-    return Response.json({
-      success: true,
-      message: "Aurora Connected Successfully"
-    });
-  } catch (error) {
-    return Response.json({
-      success: false,
-      error: String(error)
-    });
-  }
+  return NextResponse.json({
+    hash,
+  });
 }

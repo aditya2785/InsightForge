@@ -2,12 +2,14 @@ import RevenueChart from "@/components/charts/RevenueChart";
 import type { ChartPoint, TopProduct } from "@/lib/types";
 
 type SalesAnalyticsProps = {
-  totalRevenue: number;
+  totalRevenue: number | null;
   totalOrders: number;
-  totalProducts: number;
-  totalCustomers: number;
+  totalProducts: number | null;
+  totalCustomers: number | null;
   chartData: ChartPoint[];
   topProducts: TopProduct[];
+  revenueAvailable: boolean;
+  productAvailable: boolean;
 };
 
 export default function SalesAnalytics({
@@ -17,6 +19,8 @@ export default function SalesAnalytics({
   totalCustomers,
   chartData,
   topProducts,
+  revenueAvailable,
+  productAvailable,
 }: SalesAnalyticsProps) {
   return (
     <>
@@ -24,7 +28,9 @@ export default function SalesAnalytics({
         <div className="bg-slate-900 p-6 rounded-xl">
           <h3>Revenue</h3>
           <p className="text-3xl font-bold">
-            Rs. {totalRevenue.toLocaleString()}
+            {totalRevenue === null
+              ? "Unavailable"
+              : `Rs. ${totalRevenue.toLocaleString()}`}
           </p>
         </div>
 
@@ -38,14 +44,14 @@ export default function SalesAnalytics({
         <div className="bg-slate-900 p-6 rounded-xl">
           <h3>Products</h3>
           <p className="text-3xl font-bold">
-            {totalProducts}
+            {totalProducts === null ? "Unavailable" : totalProducts}
           </p>
         </div>
 
         <div className="bg-slate-900 p-6 rounded-xl">
           <h3>Customers</h3>
           <p className="text-3xl font-bold">
-            {totalCustomers}
+            {totalCustomers === null ? "Unavailable" : totalCustomers}
           </p>
         </div>
       </div>
@@ -56,7 +62,13 @@ export default function SalesAnalytics({
             Revenue Analytics
           </h2>
 
-          <RevenueChart data={chartData} />
+          {revenueAvailable && chartData.length > 0 ? (
+            <RevenueChart data={chartData} />
+          ) : (
+            <p className="text-slate-400">
+              Revenue data unavailable.
+            </p>
+          )}
         </div>
 
         <div className="bg-slate-900 rounded-xl p-6">
@@ -64,18 +76,24 @@ export default function SalesAnalytics({
             Top Products
           </h2>
 
-          {topProducts.map((product, index) => (
-            <div
-              key={index}
-              className="flex justify-between border-b border-slate-700 py-3"
-            >
-              <span>{product.product}</span>
+          {productAvailable && topProducts.length > 0 ? (
+            topProducts.map((product, index) => (
+              <div
+                key={index}
+                className="flex justify-between border-b border-slate-700 py-3"
+              >
+                <span>{product.product}</span>
 
-              <span>
-                Rs. {product.revenue.toLocaleString()}
-              </span>
-            </div>
-          ))}
+                <span>
+                  Rs. {product.revenue.toLocaleString()}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className="text-slate-400">
+              No product data available.
+            </p>
+          )}
         </div>
       </div>
     </>

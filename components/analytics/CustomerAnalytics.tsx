@@ -2,8 +2,10 @@ import type { BusinessRow } from "@/lib/types";
 
 export default function CustomerAnalytics({
   customerRows,
+  customerAvailable,
 }: {
   customerRows: BusinessRow[];
+  customerAvailable: boolean;
 }) {
 
   return (
@@ -17,7 +19,7 @@ export default function CustomerAnalytics({
           </h3>
 
           <p className="text-3xl font-bold">
-            {customerRows.length}
+            {customerAvailable ? customerRows.length : "Unavailable"}
           </p>
         </div>
 
@@ -29,7 +31,9 @@ export default function CustomerAnalytics({
         </h2>
 
         <p>
-          Customer dataset loaded successfully.
+          {customerAvailable
+            ? "Customer dataset loaded successfully."
+            : "Customer data unavailable."}
         </p>
       </div>
 

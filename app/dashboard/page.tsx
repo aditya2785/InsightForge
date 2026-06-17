@@ -5,9 +5,34 @@ import Link from "next/link";
 import SalesAnalytics from "@/components/analytics/SalesAnalytics";
 import InventoryAnalytics from "@/components/analytics/InventoryAnalytics";
 import CustomerAnalytics from "@/components/analytics/CustomerAnalytics";
-import type { BusinessRow } from "@/lib/types";
+import BusinessHealthScoreCard from "@/components/dashboard/BusinessHealthScoreCard";
+import ForecastCenter from "@/components/dashboard/ForecastCenter";
+import RiskCenter from "@/components/dashboard/RiskCenter";
+import type {
+  AnomalyDTO,
+  BusinessHealthScoreDTO,
+  BusinessRow,
+  ForecastDTO,
+} from "@/lib/types";
+import {
+  getMappedNumber,
+  getMappedValue,
+  type ColumnMapping,
+} from "@/lib/analytics/column-mapper";
 
 type DashboardTab = "sales" | "inventory" | "customers";
+
+type DatasetMetadata = {
+  sales: {
+    mapping: ColumnMapping;
+  } | null;
+  customers: {
+    mapping: ColumnMapping;
+  } | null;
+  inventory: {
+    mapping: ColumnMapping;
+  } | null;
+};
 
 export default function DashboardPage() {
   const [salesRows, setSalesRows] = useState<BusinessRow[]>([]);
@@ -17,6 +42,16 @@ export default function DashboardPage() {
   const [aiInsights, setAiInsights] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<DashboardTab>("sales");
+  const [healthScore, setHealthScore] =
+    useState<BusinessHealthScoreDTO | null>(null);
+  const [forecasts, setForecasts] = useState<ForecastDTO[]>([]);
+  const [anomalies, setAnomalies] = useState<AnomalyDTO[]>([]);
+  const [datasetMetadata, setDatasetMetadata] =
+    useState<DatasetMetadata>({
+      sales: null,
+      customers: null,
+      inventory: null,
+    });
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -38,6 +73,18 @@ export default function DashboardPage() {
         setInventoryRows(
           Array.isArray(result.inventoryRows) ? result.inventoryRows : []
         );
+        setHealthScore(result.healthScore ?? null);
+        setForecasts(
+          Array.isArray(result.forecasts) ? result.forecasts : []
+        );
+        setAnomalies(
+          Array.isArray(result.anomalies) ? result.anomalies : []
+        );
+        setDatasetMetadata(result.datasetMetadata ?? {
+          sales: null,
+          customers: null,
+          inventory: null,
+        });
       }
     } catch (error) {
       console.error("Dashboard Error:", error);
@@ -52,43 +99,65 @@ export default function DashboardPage() {
     });
   }, [fetchDashboardData]);
 
-  const totalRevenue = salesRows.reduce(
-    (sum, row) => sum + Number(row.Sales ?? 0),
-    0
-  );
+  const salesMapping = datasetMetadata.sales?.mapping ?? {};
+  const customerMapping = datasetMetadata.customers?.mapping ?? {};
+  const inventoryMapping = datasetMetadata.inventory?.mapping ?? {};
+  const hasRevenue = Boolean(salesMapping.revenue);
+  const hasProduct = Boolean(salesMapping.product);
+  const hasCustomer =
+    Boolean(customerMapping.customer) ||
+    Boolean(salesMapping.customer);
+  const totalRevenue = hasRevenue
+    ? salesRows.reduce(
+        (sum, row) =>
+          sum + (getMappedNumber(row, salesMapping, "revenue") ?? 0),
+        0
+      )
+    : null;
 
-  const totalOrders = new Set(
-    salesRows.map((row) => row["Order ID"])
-  ).size;
+  const totalOrders = salesRows.length;
 
   const totalCustomers =
-    customerRows.length > 0
+    customerRows.length > 0 && customerMapping.customer
       ? customerRows.length
-      : new Set(
-          salesRows.map((row) => row["Customer ID"])
-        ).size;
+      : hasCustomer
+      ? new Set(
+          salesRows
+            .map((row) => getMappedValue(row, salesMapping, "customer"))
+            .filter(Boolean)
+            .map(String)
+        ).size
+      : null;
 
   const totalProducts =
-    inventoryRows.length > 0
+    inventoryRows.length > 0 && inventoryMapping.inventory
       ? inventoryRows.length
-      : new Set(
-          salesRows.map((row) => row["Product ID"])
-        ).size;
+      : hasProduct
+      ? new Set(
+          salesRows
+            .map((row) => getMappedValue(row, salesMapping, "product"))
+            .filter(Boolean)
+            .map(String)
+        ).size
+      : null;
 
   const revenueByMonth: Record<string, number> = {};
 
-  salesRows.forEach((row) => {
-    const date = row["Order Date"];
+  if (hasRevenue && salesMapping.date) {
+    salesRows.forEach((row) => {
+      const dateValue = getMappedValue(row, salesMapping, "date");
+      const revenue = getMappedNumber(row, salesMapping, "revenue");
 
-    if (!date) return;
+      if (!dateValue || revenue === null) return;
 
-    const month = new Date(String(date)).toLocaleString("default", {
-      month: "short",
+      const month = new Date(String(dateValue)).toLocaleString("default", {
+        month: "short",
+      });
+
+      revenueByMonth[month] =
+        (revenueByMonth[month] || 0) + revenue;
     });
-
-    revenueByMonth[month] =
-      (revenueByMonth[month] || 0) + Number(row.Sales || 0);
-  });
+  }
 
   const chartData = Object.keys(revenueByMonth).map((month) => ({
     month,
@@ -97,16 +166,19 @@ export default function DashboardPage() {
 
   const productRevenue: Record<string, number> = {};
 
-  salesRows.forEach((row) => {
-    const product = String(
-      row["Product Name"] ||
-      row["Product"] ||
-      "Unknown Product"
-    );
+  if (hasProduct && hasRevenue) {
+    salesRows.forEach((row) => {
+      const productValue = getMappedValue(row, salesMapping, "product");
+      const revenue = getMappedNumber(row, salesMapping, "revenue");
 
-    productRevenue[product] =
-      (productRevenue[product] || 0) + Number(row.Sales ?? 0);
-  });
+      if (!productValue || revenue === null) return;
+
+      const product = String(productValue);
+
+      productRevenue[product] =
+        (productRevenue[product] || 0) + revenue;
+    });
+  }
 
   const topProducts = Object.entries(productRevenue)
     .map(([product, revenue]) => ({
@@ -233,6 +305,12 @@ export default function DashboardPage() {
           </div>
         )}
 
+        <BusinessHealthScoreCard healthScore={healthScore} />
+
+        <ForecastCenter forecasts={forecasts} />
+
+        <RiskCenter anomalies={anomalies} />
+
         <div className="flex gap-4 mb-8">
           <button
             onClick={() => setActiveTab("sales")}
@@ -276,15 +354,23 @@ export default function DashboardPage() {
             totalCustomers={totalCustomers}
             chartData={chartData}
             topProducts={topProducts}
+            revenueAvailable={hasRevenue}
+            productAvailable={hasProduct}
           />
         )}
 
         {activeTab === "inventory" && (
-          <InventoryAnalytics inventoryRows={inventoryRows} />
+          <InventoryAnalytics
+            inventoryRows={inventoryRows}
+            inventoryAvailable={Boolean(inventoryMapping.inventory)}
+          />
         )}
 
         {activeTab === "customers" && (
-          <CustomerAnalytics customerRows={customerRows} />
+          <CustomerAnalytics
+            customerRows={customerRows}
+            customerAvailable={hasCustomer}
+          />
         )}
       </main>
     </div>

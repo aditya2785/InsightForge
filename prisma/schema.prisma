@@ -14,16 +14,88 @@ model User {
   password  String
   createdAt DateTime @default(now())
 
-  uploads   UploadedData[]
+  uploads            UploadedData[]
+  healthScores       BusinessHealthScore[]
+  forecasts          Forecast[]
+  anomalies          Anomaly[]
 }
 
 model UploadedData {
-  id          Int      @id @default(autoincrement())
-  datasetType String
-  data        Json
+  id                   Int      @id @default(autoincrement())
+  datasetType          String
+  data                 Json
+  columnMapping        Json?
+  compatibilityScore   Int?
+  compatibilityDetails Json?
+
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id])
+
+  forecasts            Forecast[]
+  anomalies            Anomaly[]
+
+  createdAt            DateTime @default(now())
+}
+
+model BusinessHealthScore {
+  id             String   @id @default(cuid())
+  score          Int
+  revenueScore   Int
+  inventoryScore Int
+  customerScore  Int
+  forecastScore  Int
+
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, createdAt])
+}
+
+model Forecast {
+  id              String   @id @default(cuid())
+  forecastType    String
+  predictionDate  DateTime
+  predictedValue  Float
+  confidenceScore Float
+
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  datasetId       Int
+  dataset         UploadedData @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([forecastType])
+  @@index([predictionDate])
+  @@index([userId, forecastType, predictionDate])
+}
+
+model Anomaly {
+  id          String   @id @default(cuid())
+  anomalyType String
+  title       String
+  description String
+  severity    String
+  detectedAt  DateTime
 
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  datasetId   Int
+  dataset     UploadedData @relation(fields: [datasetId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([anomalyType])
+  @@index([severity])
+  @@index([userId, anomalyType, severity])
 }

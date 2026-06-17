@@ -56,6 +56,9 @@ ${JSON.stringify(
   uploads.map((upload) => ({
     datasetType: upload.datasetType,
     createdAt: upload.createdAt,
+    columnMapping: upload.columnMapping,
+    compatibilityScore: upload.compatibilityScore,
+    compatibilityDetails: upload.compatibilityDetails,
     rows: Array.isArray(upload.data) ? upload.data.slice(0, 50) : upload.data,
   })),
   null,

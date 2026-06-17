@@ -2,8 +2,10 @@ import type { BusinessRow } from "@/lib/types";
 
 export default function InventoryAnalytics({
   inventoryRows,
+  inventoryAvailable,
 }: {
   inventoryRows: BusinessRow[];
+  inventoryAvailable: boolean;
 }) {
 
   const totalProducts =
@@ -20,7 +22,7 @@ export default function InventoryAnalytics({
           </h3>
 
           <p className="text-3xl font-bold">
-            {totalProducts}
+            {inventoryAvailable ? totalProducts : "Unavailable"}
           </p>
         </div>
 
@@ -42,7 +44,9 @@ export default function InventoryAnalytics({
         </h2>
 
         <p>
-          Inventory dataset loaded successfully.
+          {inventoryAvailable
+            ? "Inventory dataset loaded successfully."
+            : "Inventory data unavailable."}
         </p>
       </div>
 

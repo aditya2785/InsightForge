@@ -4,6 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import Papa from "papaparse";
 import { useRouter } from "next/navigation";
 import type { BusinessRow } from "@/lib/types";
+import {
+  assessCompatibility,
+  getHeadersFromRows,
+  mapColumns,
+  type ColumnMapping,
+  type CompatibilityAssessment,
+} from "@/lib/analytics/column-mapper";
 
 type DatasetType = "sales" | "inventory" | "customers";
 
@@ -13,6 +20,10 @@ export default function UploadPage() {
     useState<DatasetType>("sales");
   const [data, setData] = useState<BusinessRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
+  const [columnMapping, setColumnMapping] =
+    useState<ColumnMapping>({});
+  const [compatibility, setCompatibility] =
+    useState<CompatibilityAssessment | null>(null);
   const [salesUploaded, setSalesUploaded] = useState(false);
   const [inventoryUploaded, setInventoryUploaded] = useState(false);
   const [customersUploaded, setCustomersUploaded] = useState(false);
@@ -40,19 +51,38 @@ export default function UploadPage() {
       }
 
       const latestUpload = uploads.find(
-        (item: { datasetType?: unknown; data?: unknown }) =>
+        (item: {
+          datasetType?: unknown;
+          data?: unknown;
+          columnMapping?: ColumnMapping;
+          compatibilityDetails?: CompatibilityAssessment;
+        }) =>
           item.datasetType === type
       );
 
       if (latestUpload) {
-        setData(
+        const loadedRows =
           Array.isArray(latestUpload.data)
             ? latestUpload.data
-            : []
+            : [];
+
+        setData(loadedRows);
+        setColumnMapping(
+          latestUpload.columnMapping ??
+            mapColumns(getHeadersFromRows(loadedRows))
+        );
+        setCompatibility(
+          latestUpload.compatibilityDetails ??
+            assessCompatibility(
+              latestUpload.columnMapping ??
+                mapColumns(getHeadersFromRows(loadedRows))
+            )
         );
         markDatasetUploaded(type);
       } else {
         setData([]);
+        setColumnMapping({});
+        setCompatibility(null);
       }
     } catch (error) {
       console.error(error);
@@ -86,8 +116,15 @@ export default function UploadPage() {
       skipEmptyLines: true,
       complete: async (results: Papa.ParseResult<BusinessRow>) => {
         const parsedData = results.data;
+        const detectedMapping = mapColumns(
+          getHeadersFromRows(parsedData)
+        );
+        const detectedCompatibility =
+          assessCompatibility(detectedMapping);
 
         setData(parsedData);
+        setColumnMapping(detectedMapping);
+        setCompatibility(detectedCompatibility);
         markDatasetUploaded(datasetType);
 
         localStorage.setItem(
@@ -209,6 +246,56 @@ export default function UploadPage() {
           </p>
         </div>
       </div>
+
+      {compatibility && (
+        <div className="bg-slate-900 p-6 rounded-xl mb-8">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-2xl font-semibold">
+              Dataset Compatibility
+            </h2>
+            <p className="text-3xl font-bold">
+              {compatibility.score}%
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mt-6">
+            <div>
+              <h3 className="font-semibold mb-3">
+                Detected Columns
+              </h3>
+              <div className="space-y-2 text-slate-300">
+                {Object.entries(columnMapping).length > 0 ? (
+                  Object.entries(columnMapping).map(([field, column]) => (
+                    <p key={field}>
+                      {field.charAt(0).toUpperCase() + field.slice(1)} -&gt;{" "}
+                      {column}
+                    </p>
+                  ))
+                ) : (
+                  <p>No supported analytics columns detected.</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-3">
+                Warnings
+              </h3>
+              <div className="space-y-2 text-slate-300">
+                {compatibility.warnings.length > 0 ? (
+                  compatibility.warnings.map((warning) => (
+                    <p key={warning}>
+                      {warning}
+                    </p>
+                  ))
+                ) : (
+                  <p>All supported analytics columns were detected.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-slate-900 p-6 rounded-xl mb-8">
         <h3 className="text-xl font-semibold mb-4">
