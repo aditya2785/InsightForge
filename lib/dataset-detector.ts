@@ -14,15 +14,20 @@ export function detectDatasetTypes(columns: string[]) {
     "amount",
   ];
 
-  const inventorySignals = [
-    "stocklevel",
-    "inventory",
-    "reorder",
-    "reorderthreshold",
-    "availablestock",
-    "warehouse",
-    "stock",
-  ];
+const inventorySignals = [
+  "inventory",
+  "inventorylevel",
+  "stock",
+  "stocklevel",
+  "warehouse",
+  "reorder",
+  "reorderthreshold",
+  "availablestock",
+  "unitssold",
+  "unitsordered",
+  "demandforecast",
+  "productid",
+];
 
   const customerSignals = [
     "customer",
