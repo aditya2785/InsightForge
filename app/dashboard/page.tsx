@@ -103,29 +103,15 @@ const [activeTab, setActiveTab] =
   }, [fetchDashboardData]);
 
   const salesMapping = datasetMetadata.sales?.mapping ?? {};
+  console.log("SALES MAPPING:", salesMapping);
+console.log("CUSTOMER FIELD:", salesMapping.customer);
   const customerMapping = datasetMetadata.customers?.mapping ?? {};
   const inventoryMapping = datasetMetadata.inventory?.mapping ?? {};
   const hasSalesData = salesRows.length > 0;
 const hasInventoryData = inventoryRows.length > 0;
 const hasCustomerData = customerRows.length > 0;
 
-useEffect(() => {
-  if (hasSalesData && activeTab !== "sales") return;
-  if (hasInventoryData && activeTab === "inventory") return;
-  if (hasCustomerData && activeTab === "customers") return;
 
-  if (hasSalesData) {
-    setActiveTab("sales");
-  } else if (hasInventoryData) {
-    setActiveTab("inventory");
-  } else if (hasCustomerData) {
-    setActiveTab("customers");
-  }
-}, [
-  hasSalesData,
-  hasInventoryData,
-  hasCustomerData,
-]);
 
   const hasRevenue =
   Boolean(salesMapping.revenue) ||
@@ -135,6 +121,15 @@ useEffect(() => {
   const hasCustomer =
     Boolean(customerMapping.customer) ||
     Boolean(salesMapping.customer);
+  const customerSourceRows =
+  customerRows.length > 0
+    ? customerRows
+    : salesRows;
+
+const customerSourceMapping =
+  customerRows.length > 0
+    ? customerMapping
+    : salesMapping;
   const totalRevenue = hasRevenue
     ? salesRows.reduce(
         (sum, row) =>
@@ -448,44 +443,40 @@ if (!hasSalesData && !hasInventoryData && !hasCustomerData) {
 
         <RiskCenter anomalies={anomalies} healthScore={healthScore}/>
 
-        <div className="flex gap-4 mb-8">
-        {hasSalesData && (
-          <button
-            onClick={() => setActiveTab("sales")}
-            className={`px-5 py-2 rounded-lg transition ${
-              activeTab === "sales"
-                ? "bg-blue-600"
-                : "bg-slate-900 hover:bg-slate-800"
-            }`}
-          >
-            Sales
-          </button>
-        )}
-        {hasInventoryData && (
-          <button
-            onClick={() => setActiveTab("inventory")}
-            className={`px-5 py-2 rounded-lg transition ${
-              activeTab === "inventory"
-                ? "bg-blue-600"
-                : "bg-slate-900 hover:bg-slate-800"
-            }`}
-          >
-            Inventory
-          </button>
-        )}
-        {hasCustomerData && (
-          <button
-            onClick={() => setActiveTab("customers")}
-            className={`px-5 py-2 rounded-lg transition ${
-              activeTab === "customers"
-                ? "bg-blue-600"
-                : "bg-slate-900 hover:bg-slate-800"
-            }`}
-          >
-            Customers
-          </button>
-        )}
-        </div>
+<div className="flex gap-4 mb-8">
+  <button
+    onClick={() => setActiveTab("sales")}
+    className={`px-5 py-2 rounded-lg transition ${
+      activeTab === "sales"
+        ? "bg-blue-600"
+        : "bg-slate-900 hover:bg-slate-800"
+    }`}
+  >
+    Sales
+  </button>
+
+  <button
+    onClick={() => setActiveTab("inventory")}
+    className={`px-5 py-2 rounded-lg transition ${
+      activeTab === "inventory"
+        ? "bg-blue-600"
+        : "bg-slate-900 hover:bg-slate-800"
+    }`}
+  >
+    Inventory
+  </button>
+
+  <button
+    onClick={() => setActiveTab("customers")}
+    className={`px-5 py-2 rounded-lg transition ${
+      activeTab === "customers"
+        ? "bg-blue-600"
+        : "bg-slate-900 hover:bg-slate-800"
+    }`}
+  >
+    Customers
+  </button>
+</div>
 
         {hasSalesData && activeTab === "sales" && (
           <SalesAnalytics
@@ -500,20 +491,58 @@ if (!hasSalesData && !hasInventoryData && !hasCustomerData) {
           />
         )}
 
-{hasInventoryData && activeTab === "inventory" && (
-  <InventoryAnalytics
-    inventoryRows={inventoryRows}
-    inventoryAvailable={Boolean(inventoryMapping.inventory)}
-    mapping={inventoryMapping}
-  />
+{activeTab === "inventory" && (
+  hasInventoryData ? (
+    <InventoryAnalytics
+      inventoryRows={inventoryRows}
+      inventoryAvailable={Boolean(inventoryMapping.inventory)}
+      mapping={inventoryMapping}
+    />
+  ) : (
+    <div className="bg-slate-900 rounded-xl p-8">
+      <h2 className="text-2xl font-bold mb-4">
+        Inventory Analytics Locked
+      </h2>
+
+      <p className="text-slate-400 mb-4">
+        Inventory data has not been uploaded.
+      </p>
+
+      <div className="space-y-2 text-slate-400">
+        <p>Upload inventory data to unlock:</p>
+        <p>• Inventory Health Score</p>
+        <p>• Stock Risk Detection</p>
+        <p>• Inventory Forecasting</p>
+        <p>• Reorder Recommendations</p>
+      </div>
+    </div>
+  )
 )}
 
-{hasCustomerData && activeTab === "customers" && (
-  <CustomerAnalytics
-    customerRows={customerRows}
-    customerAvailable={hasCustomer}
-    mapping={customerMapping}
-  />
+{activeTab === "customers" && (
+  hasCustomer ? (
+    <CustomerAnalytics
+      customerRows={customerSourceRows}
+      customerAvailable={true}
+      mapping={customerSourceMapping}
+    />
+  ) : (
+    <div className="bg-slate-900 rounded-xl p-8">
+      <h2 className="text-2xl font-bold mb-4">
+        Customer Analytics Locked
+      </h2>
+
+      <p className="text-slate-400 mb-4">
+        No customer information was detected in the uploaded datasets.
+      </p>
+
+      <p className="text-slate-400">
+        Upload a customer dataset containing customer names,
+        customer IDs, email addresses, segments, or demographic
+        information to unlock customer analytics.
+      </p>
+    </div>
+  )
 )}
       </main>
     </div>

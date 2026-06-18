@@ -41,6 +41,13 @@ const aliasMap: Record<keyof ColumnMapping, string[]> = {
   ],
   customer: [
     "customer",
+    "customername",
+    "customer_name",
+    "customer name",
+    "customer number",
+    "customernumber",
+    "contact",
+    "customer company",
     "customer id",
     "customer_id",
     "client",
