@@ -287,7 +287,7 @@ if (!hasSalesData && !hasInventoryData && !hasCustomerData) {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex">
-      <aside className="w-60 border-r border-slate-800 p-6">
+      <aside className="w-60 h-screen sticky top-0 border-r border-slate-800 p-6">
         <Link href="/">
           <h1 className="text-2xl font-bold text-blue-400 block cursor-pointer hover:text-blue-300">
             InsightForge
@@ -313,7 +313,7 @@ if (!hasSalesData && !hasInventoryData && !hasCustomerData) {
         </nav>
       </aside>
 
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 overflow-y-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold">
