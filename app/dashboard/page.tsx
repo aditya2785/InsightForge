@@ -42,7 +42,9 @@ export default function DashboardPage() {
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [aiInsights, setAiInsights] = useState("");
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<DashboardTab>("sales");
+const [activeTab, setActiveTab] =
+  useState<DashboardTab>("sales");
+
   const [healthScore, setHealthScore] =
     useState<BusinessHealthScoreDTO | null>(null);
   const [forecasts, setForecasts] = useState<ForecastDTO[]>([]);
@@ -102,8 +104,29 @@ export default function DashboardPage() {
 
   const salesMapping = datasetMetadata.sales?.mapping ?? {};
   const customerMapping = datasetMetadata.customers?.mapping ?? {};
-  console.log("Customer Mapping:", customerMapping);
   const inventoryMapping = datasetMetadata.inventory?.mapping ?? {};
+  const hasSalesData = salesRows.length > 0;
+const hasInventoryData = inventoryRows.length > 0;
+const hasCustomerData = customerRows.length > 0;
+
+useEffect(() => {
+  if (hasSalesData && activeTab !== "sales") return;
+  if (hasInventoryData && activeTab === "inventory") return;
+  if (hasCustomerData && activeTab === "customers") return;
+
+  if (hasSalesData) {
+    setActiveTab("sales");
+  } else if (hasInventoryData) {
+    setActiveTab("inventory");
+  } else if (hasCustomerData) {
+    setActiveTab("customers");
+  }
+}, [
+  hasSalesData,
+  hasInventoryData,
+  hasCustomerData,
+]);
+
   const hasRevenue =
   Boolean(salesMapping.revenue) ||
   (Boolean(salesMapping.price) &&
@@ -236,13 +259,36 @@ export default function DashboardPage() {
     }
   };
 
-  if (dashboardLoading) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-white p-8 flex items-center justify-center">
-        Loading dashboard...
+if (dashboardLoading) {
+  return (
+    <div className="min-h-screen bg-slate-950 text-white p-8 flex items-center justify-center">
+      Loading dashboard...
+    </div>
+  );
+}
+
+if (!hasSalesData && !hasInventoryData && !hasCustomerData) {
+  return (
+    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold mb-4">
+          No Business Data Uploaded
+        </h1>
+
+        <p className="text-slate-400 mb-6">
+          Upload sales, inventory, or customer data to start generating insights.
+        </p>
+
+        <Link
+          href="/upload"
+          className="bg-blue-600 px-5 py-3 rounded-lg hover:bg-blue-700"
+        >
+          Upload Data
+        </Link>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex">
@@ -316,7 +362,86 @@ export default function DashboardPage() {
             </pre>
           </div>
         )}
+{(!hasSalesData || !hasInventoryData || !hasCustomerData) && (
+  <div className="grid md:grid-cols-3 gap-4 mb-6">
 
+    {!hasSalesData && (
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h3 className="font-semibold text-lg">
+          Sales Data Missing
+        </h3>
+
+        <p className="text-slate-400 mt-2">
+          Upload sales data to unlock:
+        </p>
+
+        <ul className="mt-2 text-sm text-slate-400">
+          <li>• Revenue Trends</li>
+          <li>• Forecasting</li>
+          <li>• Demand Prediction</li>
+        </ul>
+
+        <Link
+          href="/upload"
+          className="inline-block mt-4 text-blue-400 hover:text-blue-300"
+        >
+          Upload Sales Data →
+        </Link>
+      </div>
+    )}
+
+    {!hasInventoryData && (
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h3 className="font-semibold text-lg">
+          Inventory Data Missing
+        </h3>
+
+        <p className="text-slate-400 mt-2">
+          Upload inventory data to unlock:
+        </p>
+
+        <ul className="mt-2 text-sm text-slate-400">
+          <li>• Inventory Health</li>
+          <li>• Stock Risk Detection</li>
+          <li>• Reorder Planning</li>
+        </ul>
+
+        <Link
+          href="/upload"
+          className="inline-block mt-4 text-blue-400 hover:text-blue-300"
+        >
+          Upload Inventory Data →
+        </Link>
+      </div>
+    )}
+
+    {!hasCustomerData && (
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h3 className="font-semibold text-lg">
+          Customer Data Missing
+        </h3>
+
+        <p className="text-slate-400 mt-2">
+          Upload customer data to unlock:
+        </p>
+
+        <ul className="mt-2 text-sm text-slate-400">
+          <li>• Customer Analytics</li>
+          <li>• Segmentation</li>
+          <li>• Churn Insights</li>
+        </ul>
+
+        <Link
+          href="/upload"
+          className="inline-block mt-4 text-blue-400 hover:text-blue-300"
+        >
+          Upload Customer Data →
+        </Link>
+      </div>
+    )}
+
+  </div>
+)}
         <BusinessHealthScoreCard healthScore={healthScore} />
 
         <ForecastCenter forecasts={forecasts} />
@@ -324,6 +449,7 @@ export default function DashboardPage() {
         <RiskCenter anomalies={anomalies} healthScore={healthScore}/>
 
         <div className="flex gap-4 mb-8">
+        {hasSalesData && (
           <button
             onClick={() => setActiveTab("sales")}
             className={`px-5 py-2 rounded-lg transition ${
@@ -334,7 +460,8 @@ export default function DashboardPage() {
           >
             Sales
           </button>
-
+        )}
+        {hasInventoryData && (
           <button
             onClick={() => setActiveTab("inventory")}
             className={`px-5 py-2 rounded-lg transition ${
@@ -345,7 +472,8 @@ export default function DashboardPage() {
           >
             Inventory
           </button>
-
+        )}
+        {hasCustomerData && (
           <button
             onClick={() => setActiveTab("customers")}
             className={`px-5 py-2 rounded-lg transition ${
@@ -356,9 +484,10 @@ export default function DashboardPage() {
           >
             Customers
           </button>
+        )}
         </div>
 
-        {activeTab === "sales" && (
+        {hasSalesData && activeTab === "sales" && (
           <SalesAnalytics
             totalRevenue={totalRevenue}
             totalOrders={totalOrders}
@@ -371,7 +500,7 @@ export default function DashboardPage() {
           />
         )}
 
-{activeTab === "inventory" && (
+{hasInventoryData && activeTab === "inventory" && (
   <InventoryAnalytics
     inventoryRows={inventoryRows}
     inventoryAvailable={Boolean(inventoryMapping.inventory)}
@@ -379,7 +508,7 @@ export default function DashboardPage() {
   />
 )}
 
-{activeTab === "customers" && (
+{hasCustomerData && activeTab === "customers" && (
   <CustomerAnalytics
     customerRows={customerRows}
     customerAvailable={hasCustomer}

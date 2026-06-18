@@ -61,11 +61,25 @@ export default function ForecastCenter({
         </div>
       </div>
 
-      {forecasts.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 text-slate-300">
-          Upload sales data to generate sales, demand, and inventory forecasts.
-        </div>
-      ) : (
+{forecasts.length === 0 ? (
+  <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <h3 className="text-lg font-semibold mb-2">
+      Forecasting Unavailable
+    </h3>
+
+    <p className="text-slate-400">
+      Sales data is required for revenue forecasting,
+      demand prediction, and inventory planning.
+    </p>
+
+    <a
+      href="/upload"
+      className="inline-block mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg"
+    >
+      Upload Sales Data
+    </a>
+  </div>
+) : (
         <div className="grid xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6">
             <h3 className="text-lg font-semibold mb-4">
