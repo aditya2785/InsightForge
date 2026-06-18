@@ -1,7 +1,11 @@
-import type { AnomalyDTO } from "@/lib/types";
+import type {
+  AnomalyDTO,
+  BusinessHealthScoreDTO,
+} from "@/lib/types";
 
 type RiskCenterProps = {
   anomalies: AnomalyDTO[];
+  healthScore: BusinessHealthScoreDTO | null;
 };
 
 const severityStyles: Record<AnomalyDTO["severity"], string> = {
@@ -17,8 +21,25 @@ const anomalyLabels: Record<AnomalyDTO["anomalyType"], string> = {
   CUSTOMER_CHURN_RISK: "Customer Churn",
 };
 
-export default function RiskCenter({ anomalies }: RiskCenterProps) {
-  const highPriorityCount = anomalies.filter(
+function getMaxAnomalies(score: number) {
+  if (score >= 80) return 2;
+  if (score >= 70) return 3;
+  if (score >= 50) return 4;
+  return 5;
+}
+
+export default function RiskCenter({
+  anomalies,
+  healthScore,
+}: RiskCenterProps) {
+  const score = healthScore?.score ?? 0;
+
+  const displayedAnomalies = anomalies.slice(
+    0,
+    getMaxAnomalies(score)
+  );
+
+  const highPriorityCount = displayedAnomalies.filter(
     (anomaly) => anomaly.severity === "HIGH"
   ).length;
 
@@ -33,18 +54,19 @@ export default function RiskCenter({ anomalies }: RiskCenterProps) {
             Active business anomalies
           </h2>
         </div>
+
         <p className="text-sm text-slate-400">
           {highPriorityCount} high priority
         </p>
       </div>
 
-      {anomalies.length === 0 ? (
+      {displayedAnomalies.length === 0 ? (
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 text-slate-300">
           No active risks detected from the latest uploaded datasets.
         </div>
       ) : (
         <div className="grid lg:grid-cols-2 gap-4">
-          {anomalies.map((anomaly) => (
+          {displayedAnomalies.map((anomaly) => (
             <div
               key={anomaly.id}
               className="bg-slate-900 border border-slate-800 rounded-xl p-5"
@@ -54,21 +76,26 @@ export default function RiskCenter({ anomalies }: RiskCenterProps) {
                   <p className="text-sm text-slate-400">
                     {anomalyLabels[anomaly.anomalyType]}
                   </p>
+
                   <h3 className="text-lg font-semibold mt-1">
                     {anomaly.title}
                   </h3>
                 </div>
+
                 <span
                   className={`text-xs font-semibold border rounded-full px-3 py-1 ${severityStyles[anomaly.severity]}`}
                 >
                   {anomaly.severity}
                 </span>
               </div>
+
               <p className="text-slate-300 mt-3">
                 {anomaly.description}
               </p>
+
               <p className="text-xs text-slate-500 mt-4">
-                Detected {new Date(anomaly.detectedAt).toLocaleString()}
+                Detected{" "}
+                {new Date(anomaly.detectedAt).toLocaleString()}
               </p>
             </div>
           ))}

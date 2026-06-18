@@ -81,7 +81,11 @@ if (hasAnyDataset) {
 if (hasAnyDataset) {
   anomalies = await analyzeAnomaliesForUser(userId);
 }
+console.log("SALES DATASET:", sales?.datasetType);
+console.log("CUSTOMER DATASET:", customers?.datasetType);
+console.log("INVENTORY DATASET:", inventory?.datasetType);
 
+console.log("RAW INVENTORY:", inventory);
     const salesRecord = createDatasetRecord(sales);
     const customerRecord = createDatasetRecord(customers);
     const inventoryRecord = createDatasetRecord(inventory);

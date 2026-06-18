@@ -112,15 +112,27 @@ export default function ForecastCenter({
                   <p className="text-sm text-slate-400">
                     {forecastLabels[type]}
                   </p>
-                  <p className="text-3xl font-bold mt-2">
-                    {latest
-                      ? latest.predictedValue.toLocaleString()
-                      : "No signal"}
+                  <p className="text-2xl font-bold mt-2">
+                    {!latest ? (
+                      "No signal"
+                    ) : type === "INVENTORY_REQUIREMENT" &&
+                      latest.predictedValue <= 0 ? (
+                      "No Reorder Needed"
+                    ) : (
+                      latest.predictedValue.toLocaleString()
+                    )}
                   </p>
                   <p className="text-sm text-slate-400 mt-2">
-                    {latest
-                      ? `${latest.confidenceScore}% confidence for ${formatDate(latest.predictionDate)}`
-                      : "Awaiting enough uploaded history"}
+                    {!latest ? (
+                      "Awaiting enough uploaded history"
+                    ) : type === "INVENTORY_REQUIREMENT" &&
+                      latest.predictedValue <= 0 ? (
+                      `Current inventory is sufficient (${latest.confidenceScore}% confidence)`
+                    ) : (
+                      `${latest.confidenceScore}% confidence for ${formatDate(
+                        latest.predictionDate
+                      )}`
+                    )}
                   </p>
                 </div>
               );

@@ -57,13 +57,53 @@ function buildRevenuePeriods(
   return aggregateByPeriod(salesRows, mapping, "revenue");
 }
 
+function getRevenueValue(
+  row: BusinessRow,
+  mapping: ColumnMapping
+): number | null {
+  const revenue = getFieldNumber(
+    row,
+    mapping,
+    "revenue"
+  );
+
+  if (revenue !== null) {
+    return revenue;
+  }
+
+  const price = getFieldNumber(
+    row,
+    mapping,
+    "price"
+  );
+
+  const quantity = getFieldNumber(
+    row,
+    mapping,
+    "quantity"
+  );
+
+  if (
+    price !== null &&
+    quantity !== null
+  ) {
+    return price * quantity;
+  }
+
+  return null;
+}
+
 function calculateRevenueScore(
   salesRows: BusinessRow[],
   mapping: ColumnMapping
 ) {
-  if (!mapping.revenue) {
-    return 0;
-  }
+const hasRevenue =
+  mapping.revenue ||
+  (mapping.price && mapping.quantity);
+
+if (!hasRevenue) {
+  return 0;
+}
 
   const periods = buildRevenuePeriods(salesRows, mapping);
 
@@ -91,6 +131,7 @@ function calculateInventoryScore(
   if (!mapping.inventory || inventoryRows.length === 0) {
     return 0;
   }
+  
 
   const stockValues = inventoryRows
     .map((row) => getFieldNumber(row, mapping, "inventory"))
@@ -259,6 +300,7 @@ export async function getLatestDatasetBundle(
   userId: string
 ): Promise<DatasetBundle> {
   const datasets = await getLatestDatasetRecords(userId);
+  
 
   return {
     salesRows: datasets.sales?.rows ?? [],

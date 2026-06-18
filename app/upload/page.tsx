@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import Papa from "papaparse";
 import { useRouter } from "next/navigation";
 import type { BusinessRow } from "@/lib/types";
@@ -20,6 +21,7 @@ export default function UploadPage() {
     useState<DatasetType>("sales");
   const [data, setData] = useState<BusinessRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
+  const [uploadId, setUploadId] = useState("");
   const [columnMapping, setColumnMapping] =
     useState<ColumnMapping>({});
   const [compatibility, setCompatibility] =
@@ -27,6 +29,11 @@ export default function UploadPage() {
   const [salesUploaded, setSalesUploaded] = useState(false);
   const [inventoryUploaded, setInventoryUploaded] = useState(false);
   const [customersUploaded, setCustomersUploaded] = useState(false);
+  const [detectedTypes, setDetectedTypes] = useState<{
+  sales?: boolean;
+  inventory?: boolean;
+  customer?: boolean;
+}>({});
 
   const markDatasetUploaded = useCallback((type: DatasetType) => {
     if (type === "sales") setSalesUploaded(true);
@@ -152,6 +159,10 @@ try {
           });
 
           const result = await response.json();
+          if (result.id) {
+            setUploadId(result.id);
+          }
+          setDetectedTypes(result.detectedTypes || {});
 
           if (response.status === 401) {
             window.location.href = "/login";
@@ -318,12 +329,81 @@ try {
           onChange={handleFileUpload}
           className="block"
         />
+{uploadId && (
+  <button
+    onClick={async () => {
+      const confirmed = window.confirm(
+        "Delete this dataset?"
+      );
 
-        {uploadMessage && (
-          <p className="mt-4 text-slate-300">
+      if (!confirmed) return;
+
+      try {
+        const response = await fetch(
+          `/api/upload/${uploadId}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        const result = await response.json();
+
+        if (result.success) {
+          setData([]);
+          setUploadId("");
+          setUploadMessage(
+            "Dataset deleted successfully."
+          );
+
+          setDetectedTypes({});
+
+          if (datasetType === "sales") {
+            setSalesUploaded(false);
+          }
+
+          if (datasetType === "inventory") {
+            setInventoryUploaded(false);
+          }
+
+          if (datasetType === "customers") {
+            setCustomersUploaded(false);
+          }
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }}
+    className="mt-4 flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition"
+  >
+    <Trash2 size={18} />
+    Delete Dataset
+  </button>
+)}
+      {uploadMessage && (
+        <div className="mt-4">
+          <p className="text-slate-300">
             {uploadMessage}
           </p>
-        )}
+
+          {(detectedTypes.sales !== undefined ||
+            detectedTypes.inventory !== undefined ||
+            detectedTypes.customer !== undefined) && (
+            <div className="mt-3 text-sm space-y-1">
+              <p>
+                {detectedTypes.sales ? "✓" : "✗"} Sales Data
+              </p>
+
+              <p>
+                {detectedTypes.inventory ? "✓" : "✗"} Inventory Data
+              </p>
+
+              <p>
+                {detectedTypes.customer ? "✓" : "✗"} Customer Data
+              </p>
+            </div>
+          )}
+        </div>
+      )}
       </div>
 
       {data.length > 0 && (

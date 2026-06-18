@@ -7,6 +7,8 @@ export type ColumnMapping = {
   date?: string;
   quantity?: string;
   inventory?: string;
+  forecast?: string;
+  price?: string;
 };
 
 export type CompatibilityAssessment = {
@@ -72,6 +74,18 @@ quantity: [
     "stock level",
     "stock_level",
   ],
+  forecast: [
+  "forecast",
+  "demand forecast",
+  "predicted demand",
+],
+
+  price: [
+  "price",
+  "unit price",
+  "cost",
+  "selling price",
+]
 };
 
 const fieldWeights: Record<keyof ColumnMapping, number> = {
@@ -81,6 +95,8 @@ const fieldWeights: Record<keyof ColumnMapping, number> = {
   date: 20,
   quantity: 10,
   inventory: 15,
+  forecast: 5,
+  price: 5,
 };
 
 export function normalizeHeader(header: string) {

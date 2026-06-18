@@ -4,6 +4,7 @@ import { getCurrentUserId } from "@/lib/auth";
 import { recalculateBusinessHealthScore } from "@/lib/analytics/business-health";
 import { generateForecastsForUser } from "@/lib/analytics/forecasting";
 import { analyzeAnomaliesForUser } from "@/lib/analytics/anomaly-detection";
+import { detectDatasetTypes } from "@/lib/dataset-detector";
 import {
   assessCompatibility,
   getHeadersFromRows,
@@ -58,6 +59,13 @@ export async function POST(req: Request) {
     }
 
     const businessRows = rows as BusinessRow[];
+    const detectedTypes = detectDatasetTypes(
+      Object.keys(businessRows[0] || {})
+    );
+    console.log(
+  "Detected dataset types:",
+  detectedTypes
+);
     const columnMapping = mapColumns(getHeadersFromRows(businessRows));
     const compatibility =
       assessCompatibility(columnMapping);
@@ -83,6 +91,9 @@ export async function POST(req: Request) {
     return Response.json({
       success: true,
       id: saved.id,
+
+      detectedTypes,
+
       healthScore: {
         score: healthScore.score,
         revenueScore: healthScore.revenueScore,
@@ -133,7 +144,6 @@ export async function GET() {
 
     return Response.json(uploads);
   } catch (error) {
-    console.error(error);
 
     return Response.json(
       {

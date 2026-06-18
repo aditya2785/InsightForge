@@ -19,6 +19,7 @@ import {
   getMappedValue,
   type ColumnMapping,
 } from "@/lib/analytics/column-mapper";
+import { getFieldNumber } from "@/lib/analytics/dataset-utils";
 
 type DashboardTab = "sales" | "inventory" | "customers";
 
@@ -101,8 +102,12 @@ export default function DashboardPage() {
 
   const salesMapping = datasetMetadata.sales?.mapping ?? {};
   const customerMapping = datasetMetadata.customers?.mapping ?? {};
+  console.log("Customer Mapping:", customerMapping);
   const inventoryMapping = datasetMetadata.inventory?.mapping ?? {};
-  const hasRevenue = Boolean(salesMapping.revenue);
+  const hasRevenue =
+  Boolean(salesMapping.revenue) ||
+  (Boolean(salesMapping.price) &&
+    Boolean(salesMapping.quantity));
   const hasProduct = Boolean(salesMapping.product);
   const hasCustomer =
     Boolean(customerMapping.customer) ||
@@ -110,7 +115,12 @@ export default function DashboardPage() {
   const totalRevenue = hasRevenue
     ? salesRows.reduce(
         (sum, row) =>
-          sum + (getMappedNumber(row, salesMapping, "revenue") ?? 0),
+          sum +
+          (getFieldNumber(
+            row,
+            salesMapping,
+            "revenue"
+          ) ?? 0),
         0
       )
     : null;
@@ -145,7 +155,7 @@ export default function DashboardPage() {
   if (hasRevenue && salesMapping.date) {
     salesRows.forEach((row) => {
       const dateValue = getMappedValue(row, salesMapping, "date");
-      const revenue = getMappedNumber(row, salesMapping, "revenue");
+      const revenue = getFieldNumber(row, salesMapping, "revenue");
 
       if (!dateValue || revenue === null) return;
 
@@ -168,7 +178,7 @@ export default function DashboardPage() {
   if (hasProduct && hasRevenue) {
     salesRows.forEach((row) => {
       const productValue = getMappedValue(row, salesMapping, "product");
-      const revenue = getMappedNumber(row, salesMapping, "revenue");
+      const revenue = getFieldNumber(row, salesMapping, "revenue");
 
       if (!productValue || revenue === null) return;
 
@@ -311,7 +321,7 @@ export default function DashboardPage() {
 
         <ForecastCenter forecasts={forecasts} />
 
-        <RiskCenter anomalies={anomalies} />
+        <RiskCenter anomalies={anomalies} healthScore={healthScore}/>
 
         <div className="flex gap-4 mb-8">
           <button
@@ -361,19 +371,21 @@ export default function DashboardPage() {
           />
         )}
 
-        {activeTab === "inventory" && (
-          <InventoryAnalytics
-            inventoryRows={inventoryRows}
-            inventoryAvailable={Boolean(inventoryMapping.inventory)}
-          />
-        )}
+{activeTab === "inventory" && (
+  <InventoryAnalytics
+    inventoryRows={inventoryRows}
+    inventoryAvailable={Boolean(inventoryMapping.inventory)}
+    mapping={inventoryMapping}
+  />
+)}
 
-        {activeTab === "customers" && (
-          <CustomerAnalytics
-            customerRows={customerRows}
-            customerAvailable={hasCustomer}
-          />
-        )}
+{activeTab === "customers" && (
+  <CustomerAnalytics
+    customerRows={customerRows}
+    customerAvailable={hasCustomer}
+    mapping={customerMapping}
+  />
+)}
       </main>
     </div>
   );

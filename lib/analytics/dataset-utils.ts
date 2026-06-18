@@ -105,6 +105,7 @@ export function createDatasetRecord(
   }
 
   const rows = rowsFromJson(upload.data);
+  console.log("ROWS LENGTH:", rows.length);
   const derivedMapping = mapColumns(getHeadersFromRows(rows));
   const mapping = isColumnMapping(upload.columnMapping)
     ? upload.columnMapping
@@ -137,7 +138,44 @@ export function getFieldNumber(
   mapping: ColumnMapping,
   field: keyof ColumnMapping
 ) {
-  return getMappedNumber(row, mapping, field);
+  if (field === "revenue") {
+    const revenue = getMappedNumber(
+      row,
+      mapping,
+      "revenue"
+    );
+
+    if (revenue !== null) {
+      return revenue;
+    }
+
+    const price = getMappedNumber(
+      row,
+      mapping,
+      "price"
+    );
+
+    const quantity = getMappedNumber(
+      row,
+      mapping,
+      "quantity"
+    );
+
+    if (
+      price !== null &&
+      quantity !== null
+    ) {
+      return price * quantity;
+    }
+
+    return null;
+  }
+
+  return getMappedNumber(
+    row,
+    mapping,
+    field
+  );
 }
 
 export function getFieldDate(row: BusinessRow, mapping: ColumnMapping) {
@@ -152,9 +190,24 @@ export function aggregateByPeriod(
 ) {
   const values = new Map<string, number>();
 
-  if (!mapping.date || !mapping[metricField]) {
+  if (!mapping.date) {
+  return [];
+}
+
+if (
+  metricField === "revenue" &&
+  !mapping.revenue
+) {
+  const canEstimateRevenue =
+    mapping.price &&
+    mapping.quantity;
+
+  if (!canEstimateRevenue) {
     return [];
   }
+} else if (!mapping[metricField]) {
+  return [];
+}
 
   for (const row of rows) {
     const date = getFieldDate(row, mapping);
