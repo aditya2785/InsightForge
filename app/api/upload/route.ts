@@ -107,7 +107,6 @@ export async function POST(req: Request) {
       compatibility,
     });
   } catch (error) {
-    console.error(error);
 
     return Response.json(
       {
