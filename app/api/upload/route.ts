@@ -80,6 +80,7 @@ export async function POST(req: Request) {
         userId,
       },
     });
+    console.log("STEP 1 SAVED");
 
     const healthScore =
       await recalculateBusinessHealthScore(userId);
@@ -87,6 +88,7 @@ export async function POST(req: Request) {
       generateForecastsForUser(userId),
       analyzeAnomaliesForUser(userId),
     ]);
+    console.log("STEP 2 Health");
 
     return Response.json({
       success: true,
@@ -106,7 +108,9 @@ export async function POST(req: Request) {
       columnMapping,
       compatibility,
     });
+    console.log("Done");
   } catch (error) {
+    console.error("UPLOAD API ERROR:", error);
 
     return Response.json(
       {

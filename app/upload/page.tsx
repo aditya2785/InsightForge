@@ -103,11 +103,18 @@ export default function UploadPage() {
     });
   }, [loadDataFromAurora]);
 
-  const handleDatasetChange = async (type: DatasetType) => {
-    setDatasetType(type);
-    setUploadMessage("");
-    await loadDataFromAurora(type);
-  };
+const handleDatasetChange = async (type: DatasetType) => {
+  setDatasetType(type);
+
+  setUploadMessage("");
+  setData([]);
+  setUploadId("");
+  setColumnMapping({});
+  setCompatibility(null);
+  setDetectedTypes({});
+
+  await loadDataFromAurora(type);
+};
 
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>
@@ -324,6 +331,7 @@ try {
         </h3>
 
         <input
+          key={datasetType}
           type="file"
           accept=".csv"
           onChange={handleFileUpload}
